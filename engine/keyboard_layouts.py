@@ -2,6 +2,11 @@ import ctypes
 import winreg
 from ctypes import wintypes          # ← добавили
 
+# Define kernel32 Sleep function
+kernel32 = ctypes.windll.kernel32
+kernel32.Sleep.argtypes = [wintypes.DWORD]  # milliseconds
+kernel32.Sleep.restype = None
+
 class KeyboardLayoutsWin:
     _KLID_LAYOUTS_BRANCH = r"SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts"
     _KLID_PRELOAD_BRANCH = r"Keyboard Layout\\Preload"
@@ -23,6 +28,12 @@ class KeyboardLayoutsWin:
         wintypes.LPARAM  # lParam
     )
     _user32.PostMessageW.restype = wintypes.BOOL
+
+    _user32.ActivateKeyboardLayout.argtypes = (
+        wintypes.HKL,    # hkl
+        wintypes.UINT    # Flags
+    )
+    _user32.ActivateKeyboardLayout.restype = wintypes.HKL
     # ------------------------------------------------------------------- #
 
     # ------------------------------------------------------------------ #
@@ -165,10 +176,20 @@ class KeyboardLayoutsWin:
             err = ctypes.get_last_error()
             raise OSError(f"Failed to load keyboard layout: {err}")
 
-        print(f"Broadcasting keyboard layout change: {keyboard_layout}")
-        result = cls._user32.PostMessageW(cls._HWND_BROADCAST,
-                                          cls._WM_INPUT_LANG_CHANGE_REQUEST,
-                                          0, hkl)
-        if not result:
-            err = ctypes.get_last_error()
-            print(f"Warning: PostMessageW failed with error: {err}")
+        # Make the layout active for the current thread
+        cls._user32.ActivateKeyboardLayout(hkl, 0)
+
+        # Try multiple times to ensure the message is processed
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            print(f"Broadcasting keyboard layout change: {keyboard_layout} (attempt {attempt+1}/{max_attempts})")
+            result = cls._user32.PostMessageW(cls._HWND_BROADCAST,
+                                            cls._WM_INPUT_LANG_CHANGE_REQUEST,
+                                            0, hkl)
+            if not result:
+                err = ctypes.get_last_error()
+                print(f"Warning: PostMessageW failed with error: {err}")
+
+            # Add a small delay to allow the system to process the message
+            if attempt < max_attempts - 1:  # Don't sleep after the last attempt
+                kernel32.Sleep(100)  # Sleep for 100ms
