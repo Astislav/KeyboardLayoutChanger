@@ -1,7 +1,10 @@
 import keyboard
 
+from engine.dto.key_combination import KeyCombination
+from engine.interfaces.keyboard_hook_intreface import KeyboardHookInterface
 
-class Keyboard:
+
+class KeyboardHook(KeyboardHookInterface):
     def __init__(self):
         self._pressed = set()
         self._active = set()
@@ -14,12 +17,12 @@ class Keyboard:
     def __del__(self):
         keyboard.unhook(self._handler)
 
-    def register_callback(self, keys: frozenset, callback: callable):
-        self._hotkeys.update(keys)
-        self._hotkeys_to_callback[keys] = callback
+    def register_hook(self, key_combination: KeyCombination, callback: callable):
+        self._hotkeys.update(key_combination.as_frozenset())
+        self._hotkeys_to_callback[key_combination.as_frozenset()] = callback
 
-    def wait(self):
-        self._keyboard.wait('esc')
+    def process_events(self):
+        pass
 
     @staticmethod
     def _normalize(name: str) -> str:

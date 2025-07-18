@@ -1,11 +1,12 @@
 import ctypes
 import winreg
-from ctypes import wintypes          # ← добавили
+from ctypes import wintypes  # ← добавили
 
 # Define kernel32 Sleep function
 kernel32 = ctypes.windll.kernel32
 kernel32.Sleep.argtypes = [wintypes.DWORD]  # milliseconds
 kernel32.Sleep.restype = None
+
 
 class KeyboardLayoutsWin:
     _KLID_LAYOUTS_BRANCH = r"SYSTEM\\CurrentControlSet\\Control\\Keyboard Layouts"
@@ -17,24 +18,24 @@ class KeyboardLayoutsWin:
     _WM_INPUT_LANG_CHANGE_REQUEST = 0x0050
     _WM_SETTING_CHANGE = 0x001A
     _HWND_BROADCAST = 0xFFFF
-
+    _DISABLED = '3'
     _user32 = ctypes.windll.user32
 
     # --- добавили явное описание сигнатур WinAPI ------------------------ #
     _user32.PostMessageW.argtypes = (
-        wintypes.HWND,   # hWnd
-        wintypes.UINT,   # Msg
-        wintypes.WPARAM, # wParam
+        wintypes.HWND,  # hWnd
+        wintypes.UINT,  # Msg
+        wintypes.WPARAM,  # wParam
         wintypes.LPARAM  # lParam
     )
     _user32.PostMessageW.restype = wintypes.BOOL
 
     _user32.ActivateKeyboardLayout.argtypes = (
-        wintypes.HKL,    # hkl
-        wintypes.UINT    # Flags
+        wintypes.HKL,  # hkl
+        wintypes.UINT  # Flags
     )
     _user32.ActivateKeyboardLayout.restype = wintypes.HKL
-    # ------------------------------------------------------------------- #
+
 
     # ------------------------------------------------------------------ #
     # New internal helper
@@ -58,18 +59,18 @@ class KeyboardLayoutsWin:
         Missing values are tolerated and restored correctly later.
         """
         with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            cls._LAYOUT_TOGGLE_BRANCH,
-            0,
-            winreg.KEY_ALL_ACCESS
+                winreg.HKEY_CURRENT_USER,
+                cls._LAYOUT_TOGGLE_BRANCH,
+                0,
+                winreg.KEY_ALL_ACCESS
         ) as k:
             # remember previous values (may be None)
             lang = cls._safe_query_value(k, "Language Hotkey")
             layout = cls._safe_query_value(k, "Layout Hotkey")
 
             # write the disabling values
-            winreg.SetValueEx(k, "Language Hotkey", 0, winreg.REG_SZ, "3")
-            winreg.SetValueEx(k, "Layout Hotkey", 0, winreg.REG_SZ, "3")
+            winreg.SetValueEx(k, "Language Hotkey", 0, winreg.REG_SZ, cls._DISABLED)
+            winreg.SetValueEx(k, "Layout Hotkey", 0, winreg.REG_SZ, cls._DISABLED)
 
         cls.notify()
         return lang, layout
@@ -81,10 +82,10 @@ class KeyboardLayoutsWin:
         Values that were absent originally will be removed again.
         """
         with winreg.OpenKey(
-            winreg.HKEY_CURRENT_USER,
-            cls._LAYOUT_TOGGLE_BRANCH,
-            0,
-            winreg.KEY_ALL_ACCESS
+                winreg.HKEY_CURRENT_USER,
+                cls._LAYOUT_TOGGLE_BRANCH,
+                0,
+                winreg.KEY_ALL_ACCESS
         ) as k:
             # Language Hotkey
             if lang is None:
@@ -182,10 +183,10 @@ class KeyboardLayoutsWin:
         # Try multiple times to ensure the message is processed
         max_attempts = 3
         for attempt in range(max_attempts):
-            print(f"Broadcasting keyboard layout change: {keyboard_layout} (attempt {attempt+1}/{max_attempts})")
+            print(f"Broadcasting keyboard layout change: {keyboard_layout} (attempt {attempt + 1}/{max_attempts})")
             result = cls._user32.PostMessageW(cls._HWND_BROADCAST,
-                                            cls._WM_INPUT_LANG_CHANGE_REQUEST,
-                                            0, hkl)
+                                              cls._WM_INPUT_LANG_CHANGE_REQUEST,
+                                              0, hkl)
             if not result:
                 err = ctypes.get_last_error()
                 print(f"Warning: PostMessageW failed with error: {err}")

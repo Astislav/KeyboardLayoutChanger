@@ -1,6 +1,6 @@
 from itertools import cycle
 
-from engine.keyboard import Keyboard
+from engine.keyboard_hook import KeyboardHook
 from engine.keyboard_layouts import KeyboardLayoutsWin
 
 CYCLED_LAYOUTS = cycle(['00000409', '00000419'])
@@ -20,11 +20,10 @@ if __name__ == "__main__":
     available_layouts = KeyboardLayoutsWin.available_keyboard_layouts()
     print(available_layouts)
 
-    hotkey_settings = KeyboardLayoutsWin.disable_hotkeys();
+    hotkey_settings = KeyboardLayoutsWin.disable_hotkeys()
 
-    keyboard = Keyboard()
+    keyboard = KeyboardHook()
     keyboard.register_callback(frozenset({'ctrl', 'shift'}), switch_to_greek)
     keyboard.register_callback(frozenset({'alt', 'shift'}), next_layout)
-    keyboard.wait()
 
     KeyboardLayoutsWin.restore_hotkeys(*hotkey_settings)
