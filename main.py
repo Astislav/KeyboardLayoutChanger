@@ -20,7 +20,7 @@ if __name__ == "__main__":
     if SETTINGS_FILE.exists():
         setup.from_string(json.loads(SETTINGS_FILE.read_text()))
     else:
-        SETTINGS_FILE.write_text(json.dumps(setup.to_string(), indent=2))
+        SETTINGS_FILE.write_text(setup.to_string())
 
     hook = KeyboardHook()
 

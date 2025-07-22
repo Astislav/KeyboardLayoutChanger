@@ -15,3 +15,6 @@ class KeyboardLayoutId(ABC):
 
     def __repr__(self):
         return self.to_string
+
+    def __str__(self):
+        return self.to_string

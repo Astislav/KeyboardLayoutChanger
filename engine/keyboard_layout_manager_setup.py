@@ -1,3 +1,5 @@
+import json
+
 from engine.dto.key_combination import KeyCombination
 from engine.dto.keyboard_layout_id import KeyboardLayoutId
 from engine.interfaces.keyboard_layout_registry_interface import KeyboardLayoutRegistryInterface
@@ -26,18 +28,21 @@ class KeyboardLayoutManagerSetup:
         self.in_loop_keyboard_layout_ids = klids
 
         bindings: dict[KeyboardLayoutId, KeyCombination] = {}
-        for klid_string, hotkey_string in json.get("klid_to_hotkey", {}).items():
+        for klid_string, hotkey_string in json.get("kl_id_to_hotkey", {}).items():
             klid = self._klid_from_string(klid_string)
             hotkey = KeyCombination.from_hotkey_string(hotkey_string)
             bindings[klid] = hotkey
         self.klid_to_hotkey_bindings = bindings
 
-    def to_string(self) -> dict:
-        return {
-            "in_loop_kl_ids": self.in_loop_keyboard_layout_ids,
-            "next_kl_hotkey": self.next_layout_in_loop_hotkey.to_hotkey_string(),
-            "klid_to_hotkey": self.klid_to_hotkey_bindings
-        }
+    def to_string(self) -> str:
+        return json.dumps(
+            {
+                "in_loop_kl_ids": [klid.to_string for klid in self.in_loop_keyboard_layout_ids],
+                "next_kl_hotkey": self.next_layout_in_loop_hotkey.to_hotkey_string(),
+                "kl_id_to_hotkey": self.klid_to_hotkey_bindings
+            },
+            indent=2
+        )
 
     @property
     def klid_to_hotkey_bindings(self) -> dict[KeyboardLayoutId, KeyCombination]:
